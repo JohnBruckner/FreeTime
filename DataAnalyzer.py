@@ -2,6 +2,9 @@
 import openpyxl #For operating with data in Excel.
 import re #Regex.
 import io
+import string
+import matplotlib.pyplot as plt
+
 
 freqDict = {"0":0}
 
@@ -13,6 +16,19 @@ def wordSplit(strg):
     wList = pattern.findall(strg)
     wList = [word.upper() for word in wList]
     return wList
+
+def containsAlpha(strg):
+    for i in strg:
+        if not i in string.ascii_letters:
+            return False
+    return True
+
+#@TODO: Temporary solution. Need better function.
+def filterDict(dct):
+    dct = {k: v for k, v in dct.items() if containsAlpha(k)}
+    return dct
+
+
 
 
 ###Where the bulk of the work happens.
@@ -44,6 +60,10 @@ def dictToTuple(dictionary):
     l = list(zip(dictionary.keys(), dictionary.values()))
     return l
 
+def tupleToDict(tuples):
+    d = dict((x, y) for x, y in tuples)
+    return d
+
 
 ###A sort function for tuples. Format assumed is (String, Int) for purpose of this exercise.
 ###Can be generalised by using key = 0 && key = 1 instead.
@@ -51,42 +71,60 @@ def dictToTuple(dictionary):
 ###and key = num to sort by number of aparitions.
 def sortBy(*args, **kwargs):
     if kwargs["key"] == "alpha":
-        l = args[0].sort(key = lambda tup: tup[0])
+        args[0].sort(key = lambda tup: tup[0])
     elif kwargs["key"] == "num":
-        l = args[0].sort(key = lambda tup: tup[1])
+        args[0].sort(key = lambda tup: tup[1], reverse=True)
     else:
         print("Wrong key! Please try again")
         return None
-    return l
+    return args[0]
+
+# def sortD(*args):
+#     l = args[0].sort(key = lambda tup: tup[1])
+#     return l
 
 
 ###Creates an Excel workbook and fills it with data from dictionary.
 ###Takes a string as a parameter, string is the final name of the workbook.
-def updateWb(wbName):
-    global freqDict
+def updateWb(wbName, dct):
+    #global freqDict
     wb = openpyxl.Workbook()
     ws = wb.active
 
-    for i in range(1, len(freqDict)+1):
-        ws.cell(row=i, column=1).value = list(freqDict.keys())[i-1]
-        ws.cell(row=i, column=2).value = list(freqDict.values())[i-1]
+    for i in range(1, len(dct)+1):
+        ws.cell(row=i, column=1).value = list(dct.keys())[i-1]
+        ws.cell(row=i, column=2).value = list(dct.values())[i-1]
 
     wb.save(wbName)
     return None
 
 
+#@TODO: Add a class for dictionary processing
+#@TODO: Add proper graphing functionality
+def main():
+    global freqDict
 
+    inFile = input("Please input the name of the text file (.txt) \n")
+    wFile = input("\nPlease input the name of the workbook in which you want to save the results \n")
 
+    readFile(inFile)
+    toSort = freqDict
+    toSort = filterDict(toSort)
+    toSort = dictToTuple(toSort)
+    #toSort = toSort[:100]
+    toSort = sortBy(toSort, key="num")
+    toSort = tupleToDict(toSort)
 
+    # names = toSort.keys()
+    # values = toSort.values()
+    #
+    # plt.bar(names, values)
+    # plt.show()
 
+    #print(toSort)
 
+    updateWb(wFile, toSort)
 
-inFile = input("Please input the name of the text file (.txt) \n")
-wFile = input("\n Please input the name of the workbook in which you want to save the results")
+    return None
 
-readFile(inFile)
-
-toSort = dictToTuple(freqDict)
-toSort = sortBy(toSort, key="alpha")
-
-updateWb(wFile)
+main()
